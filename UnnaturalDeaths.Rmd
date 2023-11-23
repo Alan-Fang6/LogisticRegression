@@ -1,0 +1,155 @@
+---
+title: "stat429_project"
+author: "Alan Fang"
+date: "2023-10-31"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+original data source:
+https://www.kaggle.com/datasets/imoore/age-dataset
+
+```{r data import}
+#Note, I checked beforehand, the data set appears to have already been randomized when I had downloaded it.
+deaths<-AgeDataset.V1[1:10000,]
+
+
+```
+
+```{r data cleaning,echo=FALSE}
+
+deaths<-deaths[!(is.na(deaths$Manner.of.death) | is.na(deaths$Occupation) | deaths$Manner.of.death=="" | deaths$Occupation=="" | deaths$Country=="" ),]
+
+deaths<-subset(deaths,Death.year>1900)
+
+
+#Conversion of manner of death to binomial
+deaths$Manner.of.death[deaths$Manner.of.death=="suicide" |deaths$Manner.of.death== "accident" | deaths$Manner.of.death=="homicide"| deaths$Manner.of.death=="capital punishment" | deaths$Manner.of.death=="death in battle" | deaths$Manner.of.death=="unnatural death" | deaths$Manner.of.death=="extrajudicial killing"| deaths$Manner.of.death=="homicide; natural causes" | deaths$Manner.of.death=="euthanasia" | deaths$Manner.of.death=="capital punishment; unnatural death" | deaths$Manner.of.death=="complication" | deaths$Manner.of.death=="summary execution" | deaths$Manner.of.death=="suicide; unfortunate accident" | deaths$Manner.of.death=="gunshot" | deaths$Manner.of.death=="internal bleeding" |deaths$Manner.of.death=="capital punishment; homicide"] <- 1
+
+deaths$Manner.of.death[deaths$Manner.of.death=="natural causes"| deaths$Manner.of.death=="homicide; natural causes"|deaths$Manner.of.death=="suicide; natural causes"|deaths$Manner.of.death=="suicide; homicide; natural causes"| deaths$Manner.of.death=="cardiac arrest; natural causes"| deaths$Manner.of.death=="accident; natural causes"] <- 0
+
+
+#Converting occupations
+deaths$Occupation[deaths$Occupation=="Statesperson" | deaths$Occupation=="Politician" | deaths$Occupation=="Sovereign"|deaths$Occupation=="Regent"]<-"Politics (leaders)"
+
+deaths$Occupation[deaths$Occupation=="Official; french resistance fighter"  | deaths$Occupation=="Military personnel"| deaths$Occupation=="Air force officer" | deaths$Occupation=="Astronaut; test pilot; naval officer" | deaths$Occupation=="Resistance fighter; submariner; intelligence officer; naval officer"|deaths$Occupation=="Student; resistance fighter" | deaths$Occupation=="Resistance fighter; pacifist"| deaths$Occupation=="Torturer; concentration camp guard"|deaths$Occupation=="Flying ace" | deaths$Occupation=="Intelligence officer"|deaths$Occupation=="Torturer"|deaths$Occupation=="Executioner"|deaths$Occupation=="Jurist; resistance fighter"|deaths$Occupation=="Advocate; resistance fighter"|deaths$Occupation=="Marineoffizier"|deaths$Occupation=="Submariner"|deaths$Occupation=="Nurse; torturer; concentration camp guard"|deaths$Occupation=="Female guards in nazi concentration camps; concentration camp guard" | deaths$Occupation=="Resistance fighter; trade unionist"|deaths$Occupation=="Prison warden; torturer; concentration camp guard"|deaths$Occupation=="Resistance fighter; oberstleutnant"|deaths$Occupation=="Fighter pilot"|deaths$Occupation=="Concentration camp guard"|deaths$Occupation=="Resistance fighter; aristocrat"|deaths$Occupation=="Submariner; marineoffizier"|deaths$Occupation=="Electrician; concentration camp guard"]<-"Military_War"
+
+deaths$Occupation[deaths$Occupation=="Serial killer; criminal"|deaths$Occupation=="Record producer; chief executive officer; rapper; drug trafficker"|deaths$Occupation=="Robber"|deaths$Occupation=="Worker; spree killer"|deaths$Occupation=="Serial killer; criminal; sexual predator"|deaths$Occupation=="Criminal"|deaths$Occupation=="Serial killer"|deaths$Occupation=="Serial killer; murderer; criminal"|deaths$Occupation=="Serial killer; truck driver"|deaths$Occupation=="Police officer; serial killer"|deaths$Occupation=="Gangster"]<-"Criminal"
+
+deaths$Occupation[deaths$Occupation=="Activist"|deaths$Occupation== "Socialite; environmentalist; philanthropist; humanitarian"| deaths$Occupation=="Human rights activist; peace activist"| deaths$Occupation=="Public figure; civil rights advocate; human rights activist; autobiographer"|deaths$Occupation=="Student; peace activist"]<-"Activist"
+
+deaths$Occupation[deaths$Occupation=="Explorer" | deaths$Occupation=="Laborer" |deaths$Occupation=="Aristocrat"|deaths$Occupation=="Zookeeper"|deaths$Occupation=="Psychic"|deaths$Occupation=="Manual worker"| deaths$Occupation=="Artist" | deaths$Occupation== "Game designer; role-playing game designer"| deaths$Occupation=="Playwright" | deaths$Occupation=="Karateka"|deaths$Occupation=="Stand-up comedian"|deaths$Occupation=="Salesperson; television presenter; television personality"|deaths$Occupation=="Playwright; author; dramaturge"|deaths$Occupation=="Designer"|deaths$Occupation=="Playboy playmate; glamour model; model"|deaths$Occupation=="Philosopher"|deaths$Occupation=="Athlete"|deaths$Occupation=="Racing automobile driver" | deaths$Occupation=="Formula one driver"| deaths$Occupation=="Racing automobile driver; formula one driver" | deaths$Occupation=="Fencer"| deaths$Occupation=="Industrialist; racing automobile driver"|deaths$Occupation=="Sprinter"|deaths$Occupation=="Amateur wrestler"|deaths$Occupation=="Professional wrestler"|deaths$Occupation=="Alpine skier"| deaths$Occupation=="Motorcycle racer; racing automobile driver"|deaths$Occupation=="Motorcycle racer; formula one driver"|deaths$Occupation=="Rock climber"|deaths$Occupation=="Motorcycle racer"|deaths$Occupation=="Go professional"|deaths$Occupation=="Researcher" |deaths$Occupation== "Engineer"| deaths$Occupation== "Architect"| deaths$Occupation=="Geodesist"|deaths$Occupation=="Joiner"|deaths$Occupation=="Inventor; designer"|deaths$Occupation=="Businessperson" |  deaths$Occupation=="Entrepreneur"| deaths$Occupation=="Chairperson; organizational founder"|deaths$Occupation=="Secretary"|deaths$Occupation=="Teacher" | deaths$Occupation=="Esperantist"|deaths$Occupation=="Esperantist; lexicographer"|deaths$Occupation=="Official"|deaths$Occupation=="Interpreter"|deaths$Occupation=="Neurologist; psychoanalyst"| deaths$Occupation=="Physician"|deaths$Occupation=="Nurse"|deaths$Occupation=="Nurse; diarist"|deaths$Occupation=="Psychiatrist; psychoanalyst"| deaths$Occupation=="Astrologer; surgeon"|deaths$Occupation=="Religious figure"|deaths$Occupation=="Monk; ascetic"|deaths$Occupation=="Nun"|deaths$Occupation=="Lawyer"|deaths$Occupation=="Judge"|deaths$Occupation=="Jurist"|deaths$Occupation=="Journalist"| deaths$Occupation=="Publisher"|deaths$Occupation=="Clarinetist"|deaths$Occupation=="Drummer"|deaths$Occupation=="Violinist"| deaths$Occupation=="Disc jockey"| deaths$Occupation=="Student"]<-"Other"
+
+deaths$Country[grepl("soviet union",deaths$Country,ignore.case=TRUE)|grepl("nazi germany",deaths$Country,ignore.case=TRUE)|grepl("united kingdom",deaths$Country,ignore.case=TRUE)|grepl("british",deaths$Country,ignore.case=TRUE)|grepl("france",deaths$Country,ignore.case=TRUE)| grepl("french",deaths$Country,ignore.case=TRUE)|grepl("austria",deaths$Country,ignore.case=TRUE)|grepl("russia",deaths$Country,ignore.case=TRUE)|grepl("italy",deaths$Country,ignore.case=TRUE)|grepl("italian",deaths$Country,ignore.case=TRUE)|grepl("netherlands",deaths$Country,ignore.case=TRUE)|grepl("german",deaths$Country,ignore.case=TRUE)|grepl("spain",deaths$Country,ignore.case=TRUE)|grepl("norway",deaths$Country,ignore.case=TRUE)|grepl("poland",deaths$Country,ignore.case=TRUE)| grepl("denmark",deaths$Country,ignore.case=TRUE)|grepl("belgium",deaths$Country,ignore.case=TRUE)|grepl("greece",deaths$Country,ignore.case=TRUE)|grepl("switzerland",deaths$Country,ignore.case=TRUE)|grepl("hungary",deaths$Country,ignore.case=TRUE)|grepl("luxembourg",deaths$Country,ignore.case=TRUE)|grepl("finland",deaths$Country,ignore.case=TRUE)|grepl("portugal",deaths$Country,ignore.case=TRUE)|grepl("bulgaria",deaths$Country,ignore.case=TRUE)|grepl("weimar",deaths$Country,ignore.case=TRUE)|grepl("yugoslavia",deaths$Country,ignore.case=TRUE)|grepl("bosnia",deaths$Country,ignore.case=TRUE)|grepl("czech",deaths$Country,ignore.case=TRUE)|grepl("belarus",deaths$Country,ignore.case=TRUE)|grepl("romania",deaths$Country,ignore.case=TRUE)|grepl("albania",deaths$Country,ignore.case=TRUE)|grepl("serbia",deaths$Country,ignore.case=TRUE)|grepl("ireland",deaths$Country,ignore.case=TRUE)|grepl("sweden",deaths$Country,ignore.case=TRUE)]<-"Europe"
+
+
+deaths$Country[grepl("united states",deaths$Country,ignore.case=TRUE)|grepl("canada",deaths$Country,ignore.case=TRUE)|grepl("mexico",deaths$Country,ignore.case=TRUE)]<-"North America"
+
+deaths$Country[grepl("chile",deaths$Country,ignore.case=TRUE)|grepl("argentina",deaths$Country,ignore.case=TRUE)|grepl("colombia",deaths$Country,ignore.case=TRUE)|grepl("brazil",deaths$Country,ignore.case=TRUE)|grepl("venezuela",deaths$Country,ignore.case=TRUE)|grepl("uruguay",deaths$Country,ignore.case=TRUE)|grepl("bolivia",deaths$Country,ignore.case=TRUE)]<-"South America"
+
+deaths$Country[grepl("Japan",deaths$Country,ignore.case=TRUE)|grepl("china",deaths$Country,ignore.case=TRUE)|grepl("philippine",deaths$Country,ignore.case=TRUE)|grepl("brunei",deaths$Country,ignore.case=TRUE)|grepl("korea",deaths$Country,ignore.case=TRUE)]<-"East Asia"
+
+deaths$Country[grepl("australia",deaths$Country,ignore.case=TRUE)|grepl("new zealand",deaths$Country,ignore.case=TRUE)|grepl("marshall island",deaths$Country,ignore.case=TRUE)|grepl("nauru",deaths$Country,ignore.case=TRUE)]<-"Oceania"
+
+deaths$Country[grepl("ghana",deaths$Country,ignore.case=TRUE)|grepl("zimbabwe",deaths$Country,ignore.case=TRUE)|grepl("kenya",deaths$Country,ignore.case=TRUE)|grepl("libya",deaths$Country,ignore.case=TRUE)|grepl("nigeria",deaths$Country,ignore.case=TRUE)|grepl("africa",deaths$Country,ignore.case=TRUE)|grepl("uganda",deaths$Country,ignore.case=TRUE)|grepl("morocco",deaths$Country,ignore.case=TRUE)|grepl("egypt",deaths$Country,ignore.case=TRUE)]<-"Africa"
+
+deaths$Country[grepl("Iraq",deaths$Country,ignore.case=TRUE)|grepl("turkey",deaths$Country,ignore.case=TRUE)|grepl("israel",deaths$Country,ignore.case=TRUE)|grepl("lebanon",deaths$Country,ignore.case=TRUE)|grepl("iran",deaths$Country,ignore.case=TRUE)|grepl("syria",deaths$Country,ignore.case=TRUE)|grepl("saudi arabia",deaths$Country,ignore.case=TRUE)]<-"Middle East"
+
+deaths$Country[grepl("jamaica",deaths$Country,ignore.case=TRUE)|grepl("cuba",deaths$Country,ignore.case=TRUE)|grepl("dominican",deaths$Country,ignore.case=TRUE)]<-"Caribbean"
+
+deaths$Country[grepl("india",deaths$Country,ignore.case=TRUE)|grepl("Afghanistan",deaths$Country,ignore.case=TRUE)]<-"South asia"
+
+
+
+
+
+
+
+
+
+deaths$Gender[deaths$Gender=="Transgender Female"]<-"Male"
+
+#Converting variable types
+deaths$Gender<-factor(deaths$Gender)
+deaths$Manner.of.death<-as.numeric(deaths$Manner.of.death)
+deaths$Occupation<-as.factor(deaths$Occupation)
+deaths$Country<-as.factor(deaths$Country)
+deaths$Occupation<-relevel(deaths$Occupation,ref="Other")
+attach(deaths)
+```
+
+
+```{r age related to manner of death, echo=FALSE}
+boxplot(Age.of.death~Manner.of.death,data=deaths,ylab="Age_Of_Death",xlab="Cause of Death (0: Natural,1: Unnatural)")
+
+```
+
+
+
+```{r year related to manner of death, echo=FALSE}
+boxplot(Death.year~Manner.of.death,data=deaths,ylab="Year_of_death",xlab="Cause of Death (0: Natural,1: Unnatural)")
+```
+
+
+
+```{r first model, echo=FALSE}
+model1<-glm(Manner.of.death~Age.of.death+Death.year+Occupation+Country+Gender,family=binomial)
+summary(model1)
+
+```
+
+
+```{r variable selection, echo=FALSE}
+n<-length(Manner.of.death)
+backwardBIC<-step(model1,direction="backward",k=log(n))
+```
+
+```{r bic model, echo=FALSE}
+model2<-glm(Manner.of.death~Age.of.death+Death.year+Occupation,family=binomial)
+summary(model2)
+```
+
+```{r anova, echo=FALSE}
+anova(model1,model2,test="Chisq")
+```
+
+
+Using anova, we could determine that as p<0.05, model2 is significantly different than model1.
+
+model 2 can be written as
+$P(unnatural)=\frac{exp(15.899514-0.068323Age(death)-0.006592Year(death)+1.053312Activist+1.545476Criminal+1.785350Military+1.081053Politician)}{1+exp(15.899514-0.068323Age(death)-0.006592Year(death)+1.053312Activist+1.545476Criminal+1.785350Military+1.081053Politician)}$
+
+now lets predict the P(unnatural) for politicians at the average age of death and year versus normal
+```{r politicians, echo=FALSE}
+med_age<-median(deaths$Age.of.death)
+med_year<-median(deaths$Death.year)
+beta<-model2$coefficients
+
+#median predictions
+prob_military_median<-exp(beta[1]+beta[2]*med_age+beta[3]*med_year+beta[6])/(1+exp(beta[1]+beta[2]*med_age+beta[3]*med_year+beta[6]))
+prob_criminal_median<-exp(beta[1]+beta[2]*med_age+beta[3]*med_year+beta[5])/(1+exp(beta[1]+beta[2]*med_age+beta[3]*med_year+beta[5]))
+prob_politician_median<-exp(beta[1]+beta[2]*med_age+beta[3]*med_year+beta[7])/(1+exp(beta[1]+beta[2]*med_age+beta[3]*med_year+beta[7]))
+prob_normal_median<-exp(beta[1]+beta[2]*med_age+beta[3]*med_year)/(1+exp(beta[1]+beta[2]*med_age+beta[3]*med_year))
+
+
+prob_military_median
+prob_criminal_median
+prob_politician_median
+prob_normal_median
+
+#average in 2016 Canada predictions
+prob_military_2019<-exp(beta[1]+beta[2]*78+beta[3]*2016+beta[6])/(1+exp(beta[1]+beta[2]*78+beta[3]*2016+beta[6]))
+prob_criminal_2019<-exp(beta[1]+beta[2]*78+beta[3]*2016+beta[5])/(1+exp(beta[1]+beta[2]*78+beta[3]*2016+beta[5]))
+prob_Politician_2019<-exp(beta[1]+beta[2]*78+beta[3]*2016+beta[7])/(1+exp(beta[1]+beta[2]*78+beta[3]*2016+beta[7]))
+prob_normal_2019<-exp(beta[1]+beta[2]*78+beta[3]*2019)/(1+exp(beta[1]+beta[2]*78+beta[3]*2019))
+
+prob_military_2019
+prob_criminal_2019
+prob_Politician_2019
+prob_normal_2019
+```
+$log(\frac{P(unnatural)}{1+P(unnatural)}) = 15.8996-0.069Age-0.006Year+1.05Activist+1.54Criminal+1.79Military+1.08Politician$
+
